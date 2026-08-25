@@ -1,0 +1,57 @@
+name: Sync upstream and re-apply patches
+
+on:
+  schedule:
+    # Daily at 07:00 UTC
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    env:
+      # Files modified by patches (space-separated, only upstream files)
+      PATCHED_FILES: "internal/server/server.go"
+
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: dev.patch
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/k1LoW/mo.git
+          git fetch upstream main
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Revert patched files
+        run: bash .github/scripts/revert_patched_files.sh
+
+      - name: Merge upstream
+        run: |
+          git merge upstream/main --no-edit
+          # If merge fails, it means upstream changed a non-patched file
+          # that conflicts with our changes. We want this to fail loudly.
+
+      - name: Re-apply patches
+        run: bash .github/scripts/apply_patches.sh
+
+      - name: Commit and push
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes — already up to date"
+          else
+            git commit -m "chore: sync upstream and re-apply patches"
+            git push origin dev.patch
+          fi
