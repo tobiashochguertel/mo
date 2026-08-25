@@ -1,47 +1,34 @@
 #!/usr/bin/env bash
-# apply_patches.sh — apply all .patch files in alphabetical order
+# Apply all .patch files in .github/patches/ in order.
+# Idempotent: skips patches that are already applied.
+# Fails loudly if a patch doesn't apply cleanly.
 #
-# Used by the sync workflow after merging upstream.
-# Each patch is applied with `git apply` and checked for idempotency.
+# Usage: apply_patches.sh
 set -euo pipefail
 
-PATCH_DIR="$(cd "$(dirname "$0")/.." && pwd)/patches"
+PATCH_DIR=".github/patches"
 
-if [ ! -d "$PATCH_DIR" ]; then
-    echo "No patches directory found at $PATCH_DIR"
+if [[ ! -d "$PATCH_DIR" ]]; then
+    echo "⚠️  $PATCH_DIR not found — no patches to apply"
     exit 0
 fi
 
-PATCHES=$(find "$PATCH_DIR" -name '*.patch' | sort)
-
-if [ -z "$PATCHES" ]; then
-    echo "No .patch files found"
-    exit 0
-fi
-
-FAILED=0
-for patch in $PATCHES; do
+for patch in "$PATCH_DIR"/*.patch; do
+    [[ ! -f "$patch" ]] && continue
     name=$(basename "$patch")
-    echo "Applying $name..."
 
-    # Check if already applied (reverse check)
+    # Idempotency: if reverse applies cleanly, the patch is already present
     if git apply --reverse --check "$patch" 2>/dev/null; then
-        echo "  Already applied — skipping"
+        echo "✅ $name already applied"
         continue
     fi
 
-    # Apply
-    if git apply --check "$patch" 2>/dev/null && git apply "$patch"; then
-        echo "  Applied successfully"
+    # Check if it applies cleanly
+    if git apply --check "$patch" 2>/dev/null; then
+        git apply "$patch"
+        echo "✅ applied $name"
     else
-        echo "  FAILED to apply"
-        FAILED=$((FAILED + 1))
+        echo "::error::$name does not apply cleanly — upstream may have changed the surrounding code"
+        exit 1
     fi
 done
-
-if [ "$FAILED" -gt 0 ]; then
-    echo "$FAILED patch(es) failed to apply"
-    exit 1
-fi
-
-echo "All patches applied"
