@@ -317,7 +317,7 @@ func (s *State) AddFile(absPath, groupName string) (*FileEntry, error) {
 	entry := &FileEntry{
 		Name:  filepath.Base(absPath),
 		ID:    FileID(absPath),
-		Path:  absPath,
+		Path:  filepath.ToSlash(absPath),
 		Title: title,
 	}
 	g.Files = append(g.Files, entry)
