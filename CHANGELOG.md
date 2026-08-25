@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.6.8](https://github.com/tobiashochguertel/mo/compare/v1.6.7...v1.6.8) - 2026-08-25
+
 ## [v1.6.7](https://github.com/k1LoW/mo/compare/v1.6.6...v1.6.7) - 2026-08-03
 
 ### Fix bug 🐛
