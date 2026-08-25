@@ -35,7 +35,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Revert patched files
-        run: bash .github/scripts/revert_patched_files.sh
+        run: bash .github/scripts/revert_patched_files.sh upstream/main upstream/main
 
       - name: Merge upstream
         run: |
