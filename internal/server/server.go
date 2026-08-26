@@ -38,6 +38,20 @@ type FileEntry struct {
 	content  string // in-memory content for uploaded files
 }
 
+// MarshalJSON serializes FileEntry for the frontend API, normalizing Path to
+// forward slashes so buildTree.ts path splitting works cross-platform.
+// The internal Path field stays OS-native for server-side comparisons and I/O.
+func (f FileEntry) MarshalJSON() ([]byte, error) {
+	type alias FileEntry
+	return json.Marshal(struct {
+		alias
+		Path string `json:"path"`
+	}{
+		alias: alias(f),
+		Path:  filepath.ToSlash(f.Path),
+	})
+}
+
 const headFileSizeLimit = 8192
 
 // leadingColumns counts the indentation of line in columns, expanding tabs to
@@ -317,7 +331,7 @@ func (s *State) AddFile(absPath, groupName string) (*FileEntry, error) {
 	entry := &FileEntry{
 		Name:  filepath.Base(absPath),
 		ID:    FileID(absPath),
-		Path:  filepath.ToSlash(absPath),
+		Path:  absPath,
 		Title: title,
 	}
 	g.Files = append(g.Files, entry)
