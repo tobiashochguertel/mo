@@ -2331,8 +2331,9 @@ func TestHandleOpenFile_PercentEncodedNonASCII(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&entry); err != nil {
 		t.Fatal(err)
 	}
-	if entry.Path != targetFile {
-		t.Errorf("got path %q, want %q", entry.Path, targetFile)
+	want := filepath.ToSlash(targetFile)
+	if entry.Path != want {
+		t.Errorf("got path %q, want %q", entry.Path, want)
 	}
 }
 
